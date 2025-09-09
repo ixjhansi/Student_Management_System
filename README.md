@@ -47,7 +47,7 @@ mvn spring-boot:run<br>
 ### **Access APIs:
 Open http://localhost:8080/swagger-ui/index.html<br>
  
-Use Postman or frontend to interact with REST APIs
+Use Postman to interact with REST APIs
 
 
 Author<br>
