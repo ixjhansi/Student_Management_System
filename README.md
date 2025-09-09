@@ -1,4 +1,4 @@
-# **Stuent Management System
+# **Student Management System
 ## **Overview:
 The Student Management System is a web-based application developed using Spring Boot, JPA, and MS SQL Server. It provides an easy and efficient way to manage student, teacher, subject, and class information for educational institutions. This system allows administrators to allocate rooms for classes based on student count, manage teachers for different subjects, and keep track of student and class information.
 
