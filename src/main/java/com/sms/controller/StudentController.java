@@ -3,6 +3,7 @@ package com.sms.controller;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.sms.request.StudentRequest;
 import com.sms.response.StudentDetailResponse;
@@ -18,125 +19,128 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.stream.Collectors;
+
 @RestController
 @RequestMapping("/api/students")
 public class StudentController {
 
-    @Autowired
-    private StudentRepository studentRepository;
+	@Autowired
+	private StudentRepository studentRepository;
 
-    @Autowired
-    private ClassRepository classRepository;
+	@Autowired
+	private ClassRepository classRepository;
 
-    // ---------- POST ----------
-    @PostMapping
-    public StudentDetailResponse createStudent(@RequestBody StudentRequest request) {
-        ClassEntity classEntity = classRepository.findById(request.getClassId())
-                .orElseThrow(() -> new RuntimeException("Class not found"));
+	// ---------- POST ----------
+	@PostMapping
+	@PreAuthorize("hasAnyAuthority('admin')")
+	public StudentDetailResponse createStudent(@RequestBody StudentRequest request) {
+		ClassEntity classEntity = classRepository.findById(request.getClassId())
+				.orElseThrow(() -> new RuntimeException("Class not found"));
 
-        Student student = new Student();
-        student.setName(request.getName());
-        student.setEmail(request.getEmail());
-        student.setStatus(request.getStatus());
-        student.setClassEntity(classEntity);
+		Student student = new Student();
+		student.setName(request.getName());
+		student.setEmail(request.getEmail());
+		student.setStatus(request.getStatus());
+		student.setClassEntity(classEntity);
 
-        Student saved = studentRepository.save(student);
-        return mapToDetailResponse(saved);
-    }
+		Student saved = studentRepository.save(student);
+		return mapToDetailResponse(saved);
+	}
 
-    // ---------- GET (Paginated) ----------
-    @GetMapping
-    public Page<StudentSummaryResponse> getAllStudents(@PageableDefault(size = 5) Pageable pageable) {
-        return studentRepository.findAll(pageable)
-                .map(this::mapToSummaryResponse);
-    }
+	// ---------- GET (Paginated) ----------
+	@GetMapping
+	@PreAuthorize("hasAnyAuthority('admin')")
+	public Page<StudentSummaryResponse> getAllStudents(@PageableDefault(size = 5) Pageable pageable) {
+		return studentRepository.findAll(pageable).map(this::mapToSummaryResponse);
+	}
 
-    // ---------- GET by ID ----------
-    @GetMapping("/{id}")
-    public StudentSummaryResponse getStudentById(@PathVariable Long id) {
-        Student student = studentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Student not found"));
-        return mapToSummaryResponse(student);
-    }
+	// ---------- GET by ID ----------
+	@GetMapping("/{id}")
+	@PreAuthorize("hasAnyAuthority('admin','student')")
+	public StudentSummaryResponse getStudentById(@PathVariable Long id) {
+		Student student = studentRepository.findById(id).orElseThrow(() -> new RuntimeException("Student not found"));
+		return mapToSummaryResponse(student);
+	}
 
-    // ---------- GET by Subject ----------
-    @GetMapping("/subject/{subjectId}")
-    public List<StudentSummaryResponse> getStudentsBySubject(@PathVariable Long subjectId) {
-        return studentRepository.findStudentsBySubjectId(subjectId)
-                .stream()
-                .map(this::mapToSummaryResponse)
-                .collect(Collectors.toList());
-    }
+	// ---------- GET by Subject ----------
+	@GetMapping("/subject/{subjectId}")
+	@PreAuthorize("hasAnyAuthority('admin')")
+	public List<StudentSummaryResponse> getStudentsBySubject(@PathVariable Long subjectId) {
+		return studentRepository.findStudentsBySubjectId(subjectId).stream().map(this::mapToSummaryResponse)
+				.collect(Collectors.toList());
+	}
 
-    // ---------- PUT ----------
-    @PutMapping("/{id}")
-    public StudentDetailResponse updateStudent(@PathVariable Long id, @RequestBody StudentRequest request) {
-        Student student = studentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Student not found"));
+	// ---------- PUT ----------
+	@PutMapping("/{id}")
+	@PreAuthorize("hasAnyAuthority('admin')")
+	public StudentDetailResponse updateStudent(@PathVariable Long id, @RequestBody StudentRequest request) {
+		Student student = studentRepository.findById(id).orElseThrow(() -> new RuntimeException("Student not found"));
 
-        ClassEntity classEntity = classRepository.findById(request.getClassId())
-                .orElseThrow(() -> new RuntimeException("Class not found"));
+		ClassEntity classEntity = classRepository.findById(request.getClassId())
+				.orElseThrow(() -> new RuntimeException("Class not found"));
 
-        student.setName(request.getName());
-        student.setEmail(request.getEmail());
-        student.setStatus(request.getStatus());
-        student.setClassEntity(classEntity);
+		student.setName(request.getName());
+		student.setEmail(request.getEmail());
+		student.setStatus(request.getStatus());
+		student.setClassEntity(classEntity);
 
-        Student updated = studentRepository.save(student);
-        return mapToDetailResponse(updated);
-    }
-    //---------delete-----------
-    @DeleteMapping("/{id}")
-    public String deleteStudent(@PathVariable Long id) {
-        Student student = studentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Student not found with id " + id));
+		Student updated = studentRepository.save(student);
+		return mapToDetailResponse(updated);
+	}
 
-        // Soft delete
-        student.setStatus("inactive");
-        studentRepository.save(student);
+	// ---------delete-----------
+	@DeleteMapping("/{id}")
+	@PreAuthorize("hasAnyAuthority('admin')")
+	public String deleteStudent(@PathVariable Long id) {
+		Student student = studentRepository.findById(id)
+				.orElseThrow(() -> new RuntimeException("Student not found with id " + id));
 
-        return "Student marked as inactive successfully";
-    }
+		// Soft delete
+		student.setStatus("inactive");
+		studentRepository.save(student);
 
-    // ---------- Mappers ----------
-    private StudentSummaryResponse mapToSummaryResponse(Student student) {
-        StudentSummaryResponse response = new StudentSummaryResponse();
-        response.setId(student.getId());
-        response.setName(student.getName());
-        response.setEmail(student.getEmail());
-        response.setStatus(student.getStatus());
-        if (student.getClassEntity() != null) {
-            response.setClassName(student.getClassEntity().getName());
-        }
-        return response;
-    }
+		return "Student marked as inactive successfully";
+	}
 
-    private StudentDetailResponse mapToDetailResponse(Student student) {
-        StudentDetailResponse response = new StudentDetailResponse();
-        response.setId(student.getId());
-        response.setName(student.getName());
-        response.setEmail(student.getEmail());
-        response.setStatus(student.getStatus());
+	// ---------- Mappers ----------
+	private StudentSummaryResponse mapToSummaryResponse(Student student) {
+		StudentSummaryResponse response = new StudentSummaryResponse();
+		response.setId(student.getId());
+		response.setName(student.getName());
+		response.setEmail(student.getEmail());
+		response.setStatus(student.getStatus());
+		if (student.getClassEntity() != null) {
+			response.setClassName(student.getClassEntity().getName());
+		}
+		return response;
+	}
 
-        if (student.getClassEntity() != null) {
-            response.setClassId(student.getClassEntity().getId());
-            response.setClassName(student.getClassEntity().getName());
-        }
+	private StudentDetailResponse mapToDetailResponse(Student student) {
+		StudentDetailResponse response = new StudentDetailResponse();
+		response.setId(student.getId());
+		response.setName(student.getName());
+		response.setEmail(student.getEmail());
+		response.setStatus(student.getStatus());
 
-        if (student.getLaptopHistories() != null) {
-            response.setLaptopHistories(student.getLaptopHistories().stream().map(lh -> {
-                StudentDetailResponse.LaptopHistorySummary summary = new StudentDetailResponse.LaptopHistorySummary();
-                summary.setId(lh.getId());
-                if (lh.getLaptop() != null) {
-                    summary.setLaptopModel(lh.getLaptop().getModel());
-                    summary.setLaptopSerial(lh.getLaptop().getSerialNumber());
-                }
-                summary.setDateIssued(lh.getDateIssued() != null ? lh.getDateIssued().toString() : null);
-                summary.setDateReturned(lh.getDateReturned() != null ? lh.getDateReturned().toString() : null);
-                return summary;
-            }).collect(Collectors.toList()));
-        }
+		if (student.getClassEntity() != null) {
+			response.setClassId(student.getClassEntity().getId());
+			response.setClassName(student.getClassEntity().getName());
+		}
 
-        return response;
-    }
+		if (student.getLaptopHistories() != null) {
+			response.setLaptopHistories(student.getLaptopHistories().stream().map(lh -> {
+				StudentDetailResponse.LaptopHistorySummary summary = new StudentDetailResponse.LaptopHistorySummary();
+				summary.setId(lh.getId());
+				if (lh.getLaptop() != null) {
+					summary.setLaptopModel(lh.getLaptop().getModel());
+					summary.setLaptopSerial(lh.getLaptop().getSerialNumber());
+				}
+				summary.setDateIssued(lh.getDateIssued() != null ? lh.getDateIssued().toString() : null);
+				summary.setDateReturned(lh.getDateReturned() != null ? lh.getDateReturned().toString() : null);
+				return summary;
+			}).collect(Collectors.toList()));
+		}
+
+		return response;
+	}
 }

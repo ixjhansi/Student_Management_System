@@ -12,69 +12,74 @@ import org.springframework.web.bind.annotation.*;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/laptops")
 public class LaptopController {
 
-    @Autowired
-    private LaptopRepository laptopRepository;
+	@Autowired
+	private LaptopRepository laptopRepository;
 
-    // Create Laptop
-    @PostMapping
-    public LaptopResponse createLaptop(@RequestBody LaptopRequest request) {
-        Laptop laptop = new Laptop();
-        laptop.setSerialNumber(request.getSerialNumber());
-        laptop.setModel(request.getModel());
-        laptop.setStatus(request.getStatus());
+	// Create Laptop
+	@PostMapping
+	@PreAuthorize("hasAnyAuthority('admin')")
+	public LaptopResponse createLaptop(@RequestBody LaptopRequest request) {
+		Laptop laptop = new Laptop();
+		laptop.setSerialNumber(request.getSerialNumber());
+		laptop.setModel(request.getModel());
+		laptop.setStatus(request.getStatus());
 
-        Laptop saved = laptopRepository.save(laptop);
-        return mapToResponse(saved);
-    }
+		Laptop saved = laptopRepository.save(laptop);
+		return mapToResponse(saved);
+	}
 
-    // Get All Laptops (Paginated)
-    @GetMapping
-    public Page<LaptopResponse> getAllLaptops(Pageable pageable) {
-        return laptopRepository.findAll(pageable)
-                               .map(this::mapToResponse);
-    }
+	// Get All Laptops (Paginated)
+	@GetMapping
+	@PreAuthorize("hasAnyAuthority('admin')")
+	public Page<LaptopResponse> getAllLaptops(Pageable pageable) {
+		return laptopRepository.findAll(pageable).map(this::mapToResponse);
+	}
 
-    // Get Laptop by ID
-    @GetMapping("/{id}")
-    public LaptopResponse getLaptopById(@PathVariable Long id) {
-        Laptop laptop = laptopRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Laptop not found with id " + id));
-        return mapToResponse(laptop);
-    }
+	// Get Laptop by ID
+	@GetMapping("/{id}")
+	@PreAuthorize("hasAnyAuthority('admin')")
+	public LaptopResponse getLaptopById(@PathVariable Long id) {
+		Laptop laptop = laptopRepository.findById(id)
+				.orElseThrow(() -> new RuntimeException("Laptop not found with id " + id));
+		return mapToResponse(laptop);
+	}
 
-    // Update Laptop
-    @PutMapping("/{id}")
-    public LaptopResponse updateLaptop(@PathVariable Long id, @RequestBody LaptopRequest request) {
-        Laptop laptop = laptopRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Laptop not found with id " + id));
+	// Update Laptop
+	@PutMapping("/{id}")
+	@PreAuthorize("hasAnyAuthority('admin')")
+	public LaptopResponse updateLaptop(@PathVariable Long id, @RequestBody LaptopRequest request) {
+		Laptop laptop = laptopRepository.findById(id)
+				.orElseThrow(() -> new RuntimeException("Laptop not found with id " + id));
 
-        laptop.setSerialNumber(request.getSerialNumber());
-        laptop.setModel(request.getModel());
-        laptop.setStatus(request.getStatus());
+		laptop.setSerialNumber(request.getSerialNumber());
+		laptop.setModel(request.getModel());
+		laptop.setStatus(request.getStatus());
 
-        Laptop updated = laptopRepository.save(laptop);
-        return mapToResponse(updated);
-    }
+		Laptop updated = laptopRepository.save(laptop);
+		return mapToResponse(updated);
+	}
 
-    // Delete Laptop
-    @DeleteMapping("/{id}")
-    public String deleteLaptop(@PathVariable Long id) {
-        laptopRepository.deleteById(id);
-        return "Laptop deleted successfully";
-    }
+	// Delete Laptop
+	@DeleteMapping("/{id}")
+	@PreAuthorize("hasAnyAuthority('admin')")
+	public String deleteLaptop(@PathVariable Long id) {
+		laptopRepository.deleteById(id);
+		return "Laptop deleted successfully";
+	}
 
-    // Mapper: Entity -> Response DTO
-    private LaptopResponse mapToResponse(Laptop laptop) {
-        LaptopResponse response = new LaptopResponse();
-        response.setId(laptop.getId());
-        response.setSerialNumber(laptop.getSerialNumber());
-        response.setModel(laptop.getModel());
-        response.setStatus(laptop.getStatus());
-        return response;
-    }
+	// Mapper: Entity -> Response DTO
+	private LaptopResponse mapToResponse(Laptop laptop) {
+		LaptopResponse response = new LaptopResponse();
+		response.setId(laptop.getId());
+		response.setSerialNumber(laptop.getSerialNumber());
+		response.setModel(laptop.getModel());
+		response.setStatus(laptop.getStatus());
+		return response;
+	}
 }

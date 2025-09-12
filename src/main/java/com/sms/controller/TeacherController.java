@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -32,6 +33,7 @@ public class TeacherController {
 
     // Create Teacher
     @PostMapping
+    @PreAuthorize("hasAnyAuthority('admin')")
     public TeacherResponse createTeacher(@RequestBody TeacherRequest request) {
         Teacher teacher = new Teacher();
         teacher.setName(request.getName());
@@ -46,6 +48,7 @@ public class TeacherController {
 
     // Get All Teachers with Pagination
     @GetMapping
+    @PreAuthorize("hasAnyAuthority('admin')")
     public List<TeacherResponse> getAllTeachers(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "5") int size) {
@@ -60,6 +63,7 @@ public class TeacherController {
 
     // Get Teacher by ID
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('admin','teacher')")
     public TeacherResponse getTeacher(@PathVariable Long id) {
         Teacher teacher = teacherRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Teacher not found with id " + id));
@@ -68,6 +72,7 @@ public class TeacherController {
 
     // Update Teacher
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('admin')")
     public TeacherResponse updateTeacher(@PathVariable Long id, @RequestBody TeacherRequest request) {
         Teacher teacher = teacherRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Teacher not found with id " + id));
@@ -82,6 +87,7 @@ public class TeacherController {
         return mapToResponse(updated);
     }
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('admin')")
     public String deleteTeacher(@PathVariable Long id) {
         Teacher teacher = teacherRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Teacher not found with id " + id));

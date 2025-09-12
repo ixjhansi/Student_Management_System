@@ -8,7 +8,7 @@ import com.sms.model.ClassEntity;
 import com.sms.request.TeacherSubjectsRequest;
 import com.sms.response.TeacherSubjectsGetResponse;
 import com.sms.response.TeacherSubjectsResponse;
-
+import com.sms.service.TeacherSubjectsService;
 import com.sms.repository.TeacherSubjectsRepository;
 import com.sms.repository.TeacherRepository;
 import com.sms.repository.SubjectRepository;
@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -28,108 +29,128 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/teacher-subjects")
 public class TeacherSubjectsController {
 
-    @Autowired
-    private TeacherSubjectsRepository teacherSubjectsRepository;
+	@Autowired
+	private TeacherSubjectsRepository teacherSubjectsRepository;
 
-    @Autowired
-    private TeacherRepository teacherRepository;
+	@Autowired
+	private TeacherRepository teacherRepository;
 
-    @Autowired
-    private SubjectRepository subjectRepository;
+	@Autowired
+	private SubjectRepository subjectRepository;
 
-    @Autowired
-    private ClassRepository classEntityRepository;
+	@Autowired
+	private ClassRepository classEntityRepository;
 
-    // Create
-    @PostMapping
-    public TeacherSubjectsResponse createTeacherSubjects(@RequestBody TeacherSubjectsRequest request) {
-        Teacher teacher = teacherRepository.findById(request.getTeacherId())
-                .orElseThrow(() -> new RuntimeException("Teacher not found"));
-        Subject subject = subjectRepository.findById(request.getSubjectId())
-                .orElseThrow(() -> new RuntimeException("Subject not found"));
-        ClassEntity classEntity = classEntityRepository.findById(request.getClassId())
-                .orElseThrow(() -> new RuntimeException("Class not found"));
+	@Autowired
+	private TeacherSubjectsService teacherSubjectsService;
 
-        TeacherSubjects teacherSubjects = new TeacherSubjects();
-        teacherSubjects.setTeacher(teacher);
-        teacherSubjects.setSubject(subject);
-        teacherSubjects.setClassEntity(classEntity);
-        teacherSubjects.setRole(request.getRole());
+	// Create
+	@PostMapping
+	@PreAuthorize("hasAnyAuthority('admin')")
+	public TeacherSubjectsResponse createTeacherSubjects(@RequestBody TeacherSubjectsRequest request) {
+		Teacher teacher = teacherRepository.findById(request.getTeacherId())
+				.orElseThrow(() -> new RuntimeException("Teacher not found"));
+		Subject subject = subjectRepository.findById(request.getSubjectId())
+				.orElseThrow(() -> new RuntimeException("Subject not found"));
+		ClassEntity classEntity = classEntityRepository.findById(request.getClassId())
+				.orElseThrow(() -> new RuntimeException("Class not found"));
 
-        TeacherSubjects saved = teacherSubjectsRepository.save(teacherSubjects);
-        return mapToResponse(saved);
-    }
- // Get All with Pagination
-    @GetMapping
-    public List<TeacherSubjectsGetResponse> getAllTeacherSubjects(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "5") int size) {
+		TeacherSubjects teacherSubjects = new TeacherSubjects();
+		teacherSubjects.setTeacher(teacher);
+		teacherSubjects.setSubject(subject);
+		teacherSubjects.setClassEntity(classEntity);
+		teacherSubjects.setRole(request.getRole());
 
-        Pageable pageable = PageRequest.of(page, size);
-        Page<TeacherSubjects> teacherSubjectsPage = teacherSubjectsRepository.findAll(pageable);
+		TeacherSubjects saved = teacherSubjectsRepository.save(teacherSubjects);
+		return mapToResponse(saved);
+	}
 
-        return teacherSubjectsPage.getContent().stream()
-                .map(this::mapToGetResponse)
-                .collect(Collectors.toList());
-    }
+	// Get All with Pagination
+	@GetMapping
+	@PreAuthorize("hasAnyAuthority('admin')")
+	public List<TeacherSubjectsGetResponse> getAllTeacherSubjects(@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "5") int size) {
 
-    // Get by ID
-    @GetMapping("/{id}")
-    public TeacherSubjectsGetResponse getTeacherSubjectsById(@PathVariable Long id) {
-        TeacherSubjects teacherSubjects = teacherSubjectsRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("TeacherSubjects not found"));
-        return mapToGetResponse(teacherSubjects);
-    }
+		Pageable pageable = PageRequest.of(page, size);
+		Page<TeacherSubjects> teacherSubjectsPage = teacherSubjectsRepository.findAll(pageable);
 
-    
-    // Update
-    @PutMapping("/{id}")
-    public TeacherSubjectsResponse updateTeacherSubjects(@PathVariable Long id,
-                                                         @RequestBody TeacherSubjectsRequest request) {
-        TeacherSubjects teacherSubjects = teacherSubjectsRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("TeacherSubjects not found"));
+		return teacherSubjectsPage.getContent().stream().map(this::mapToGetResponse).collect(Collectors.toList());
+	}
 
-        Teacher teacher = teacherRepository.findById(request.getTeacherId())
-                .orElseThrow(() -> new RuntimeException("Teacher not found"));
-        Subject subject = subjectRepository.findById(request.getSubjectId())
-                .orElseThrow(() -> new RuntimeException("Subject not found"));
-        ClassEntity classEntity = classEntityRepository.findById(request.getClassId())
-                .orElseThrow(() -> new RuntimeException("Class not found"));
+	// Get by ID
+	@GetMapping("/{id}")
+	@PreAuthorize("hasAnyAuthority('admin')")
+	public TeacherSubjectsGetResponse getTeacherSubjectsById(@PathVariable Long id) {
+		TeacherSubjects teacherSubjects = teacherSubjectsRepository.findById(id)
+				.orElseThrow(() -> new RuntimeException("TeacherSubjects not found"));
+		return mapToGetResponse(teacherSubjects);
+	}
 
-        teacherSubjects.setTeacher(teacher);
-        teacherSubjects.setSubject(subject);
-        teacherSubjects.setClassEntity(classEntity);
-        teacherSubjects.setRole(request.getRole());
+	// Get all classes taught by a teacher
+	@GetMapping("/teacher/{teacherId}/classes")
+	@PreAuthorize("hasAnyAuthority('admin','teacher')")
+	public List<String> getClassesByTeacher(@PathVariable Long teacherId) {
+		return teacherSubjectsService.getClassesByTeacherId(teacherId);
+	}
 
-        TeacherSubjects updated = teacherSubjectsRepository.save(teacherSubjects);
-        return mapToResponse(updated);
-    }
+	// Get all subjects taught by a teacher
+	@GetMapping("/teacher/{teacherId}/subjects")
+	@PreAuthorize("hasAnyAuthority('admin','teacher')")
+	public List<String> getSubjectsByTeacher(@PathVariable Long teacherId) {
+		return teacherSubjectsService.getSubjectsByTeacherId(teacherId);
+	}
 
-    // Delete
-    @DeleteMapping("/{id}")
-    public String deleteTeacherSubjects(@PathVariable Long id) {
-        teacherSubjectsRepository.deleteById(id);
-        return "TeacherSubjects deleted successfully";
-    }
+	// Update
+	@PutMapping("/{id}")
+	@PreAuthorize("hasAnyAuthority('admin')")
+	public TeacherSubjectsResponse updateTeacherSubjects(@PathVariable Long id,
+			@RequestBody TeacherSubjectsRequest request) {
+		TeacherSubjects teacherSubjects = teacherSubjectsRepository.findById(id)
+				.orElseThrow(() -> new RuntimeException("TeacherSubjects not found"));
 
-    // Mapper
-    private TeacherSubjectsResponse mapToResponse(TeacherSubjects teacherSubjects) {
-        TeacherSubjectsResponse response = new TeacherSubjectsResponse();
-        response.setId(teacherSubjects.getId());
-        response.setTeacherId(teacherSubjects.getTeacher().getId());
-        response.setSubjectId(teacherSubjects.getSubject().getId());
-        response.setClassId(teacherSubjects.getClassEntity().getId());
-        response.setRole(teacherSubjects.getRole());
-        return response;
-    }
- // Mapper for GET APIs
-    private TeacherSubjectsGetResponse mapToGetResponse(TeacherSubjects teacherSubjects) {
-        TeacherSubjectsGetResponse response = new TeacherSubjectsGetResponse();
-        response.setId(teacherSubjects.getId());
-        response.setTeacherName(teacherSubjects.getTeacher().getName());
-        response.setSubjectName(teacherSubjects.getSubject().getName());
-        response.setClassName(teacherSubjects.getClassEntity().getName());
-        response.setRole(teacherSubjects.getRole());
-        return response;
-    }
+		Teacher teacher = teacherRepository.findById(request.getTeacherId())
+				.orElseThrow(() -> new RuntimeException("Teacher not found"));
+		Subject subject = subjectRepository.findById(request.getSubjectId())
+				.orElseThrow(() -> new RuntimeException("Subject not found"));
+		ClassEntity classEntity = classEntityRepository.findById(request.getClassId())
+				.orElseThrow(() -> new RuntimeException("Class not found"));
+
+		teacherSubjects.setTeacher(teacher);
+		teacherSubjects.setSubject(subject);
+		teacherSubjects.setClassEntity(classEntity);
+		teacherSubjects.setRole(request.getRole());
+
+		TeacherSubjects updated = teacherSubjectsRepository.save(teacherSubjects);
+		return mapToResponse(updated);
+	}
+
+	// Delete
+	@DeleteMapping("/{id}")
+	@PreAuthorize("hasAnyAuthority('admin')")
+	public String deleteTeacherSubjects(@PathVariable Long id) {
+		teacherSubjectsRepository.deleteById(id);
+		return "TeacherSubjects deleted successfully";
+	}
+
+	// Mapper
+	private TeacherSubjectsResponse mapToResponse(TeacherSubjects teacherSubjects) {
+		TeacherSubjectsResponse response = new TeacherSubjectsResponse();
+		response.setId(teacherSubjects.getId());
+		response.setTeacherId(teacherSubjects.getTeacher().getId());
+		response.setSubjectId(teacherSubjects.getSubject().getId());
+		response.setClassId(teacherSubjects.getClassEntity().getId());
+		response.setRole(teacherSubjects.getRole());
+		return response;
+	}
+
+	// Mapper for GET APIs
+	private TeacherSubjectsGetResponse mapToGetResponse(TeacherSubjects teacherSubjects) {
+		TeacherSubjectsGetResponse response = new TeacherSubjectsGetResponse();
+		response.setId(teacherSubjects.getId());
+		response.setTeacherName(teacherSubjects.getTeacher().getName());
+		response.setSubjectName(teacherSubjects.getSubject().getName());
+		response.setClassName(teacherSubjects.getClassEntity().getName());
+		response.setRole(teacherSubjects.getRole());
+		return response;
+	}
 }

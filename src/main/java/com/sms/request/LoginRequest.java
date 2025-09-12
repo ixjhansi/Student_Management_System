@@ -1,10 +1,10 @@
 package com.sms.request;
 
-public class AuthRequest {
+public class LoginRequest {
 	private String username;
 	private String password;
 
-	public AuthRequest() {
+	public LoginRequest() {
 	}
 
 	public String getUsername() {
