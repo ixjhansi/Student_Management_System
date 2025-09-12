@@ -14,9 +14,9 @@ public class Subject {
 
 	@Column(name = "NAME")
 	private String name;
-	
+
 	@Column(name = "STATUS")
-	private String status="active";  // values: "active" or "inactive"
+	private String status = "active"; // values: "active" or "inactive"
 
 	// Remove old @ManyToMany for teachers and classes
 
@@ -32,13 +32,10 @@ public class Subject {
 	@OneToMany(mappedBy = "subject", cascade = CascadeType.ALL)
 	private Set<SubjectMarks> subjectMarks;
 
-
 	// CONSTRUCTORS
 	public Subject() {
 		super();
 	}
-
-	
 
 	public Subject(String name, Set<TeacherSubjects> teacherSubjects, Set<ClassSubjects> classSubjects,
 			Set<SubjectMarks> subjectMarks, String status) {
@@ -50,8 +47,6 @@ public class Subject {
 		this.status = status;
 	}
 
-
-
 	public Subject(Long id, String name, Set<TeacherSubjects> teacherSubjects, Set<ClassSubjects> classSubjects,
 			Set<SubjectMarks> subjectMarks, String status) {
 		super();
@@ -62,8 +57,6 @@ public class Subject {
 		this.subjectMarks = subjectMarks;
 		this.status = status;
 	}
-
-
 
 	// Getters and Setters
 	public Long getId() {
@@ -106,16 +99,12 @@ public class Subject {
 		this.subjectMarks = subjectMarks;
 	}
 
-
-
 	public String getStatus() {
 		return status;
 	}
 
-
-
 	public void setStatus(String status) {
 		this.status = status;
 	}
-	
+
 }

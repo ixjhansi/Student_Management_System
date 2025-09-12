@@ -1,4 +1,5 @@
 package com.sms.model;
+
 import jakarta.persistence.*;
 import java.util.Set;
 
@@ -13,10 +14,9 @@ public class ClassEntity {
 
 	@Column(name = "NAME")
 	private String name;
-	
-	@Column(name = "STATUS", nullable = false)
-    private String status = "Active"; // default value
 
+	@Column(name = "STATUS", nullable = false)
+	private String status = "Active"; // default value
 
 	// Remove old @ManyToMany for teachers
 
@@ -41,7 +41,6 @@ public class ClassEntity {
 		super();
 	}
 
-	
 	public ClassEntity(String name, String status, Set<TeacherSubjects> teacherSubjects, Set<Student> students,
 			Set<ClassSubjects> classSubjects, Set<ClassRoomAllocation> classRoomAllocations) {
 		super();
@@ -52,7 +51,6 @@ public class ClassEntity {
 		this.classSubjects = classSubjects;
 		this.classRoomAllocations = classRoomAllocations;
 	}
-
 
 	public ClassEntity(Long id, String name, String status, Set<TeacherSubjects> teacherSubjects, Set<Student> students,
 			Set<ClassSubjects> classSubjects, Set<ClassRoomAllocation> classRoomAllocations) {
@@ -65,7 +63,6 @@ public class ClassEntity {
 		this.classSubjects = classSubjects;
 		this.classRoomAllocations = classRoomAllocations;
 	}
-
 
 	// Getters and Setters
 	public Long getId() {
@@ -83,17 +80,14 @@ public class ClassEntity {
 	public void setName(String name) {
 		this.name = name;
 	}
-	
 
 	public String getStatus() {
 		return status;
 	}
 
-
 	public void setStatus(String status) {
 		this.status = status;
 	}
-
 
 	public Set<TeacherSubjects> getTeacherSubjects() {
 		return teacherSubjects;
