@@ -1,10 +1,20 @@
 package com.sms.request;
 
+import jakarta.validation.constraints.NotBlank;
+
 public class RegisterRequest {
-	private String username;
-	private String password;
-	private String fullName;
-	private String role; // e.g. "STUDENT", "TEACHER", "ADMIN"
+	
+    @NotBlank(message = "Username cannot be empty")
+    private String username;
+
+    @NotBlank(message = "Password cannot be empty")
+    private String password;
+
+    @NotBlank(message = "Full name cannot be empty")
+    private String fullName;
+
+    @NotBlank(message = "Role cannot be empty")
+    private String role;
 
 	// getters and setters
 	public String getUsername() {

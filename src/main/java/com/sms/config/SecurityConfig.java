@@ -54,7 +54,9 @@ public class SecurityConfig {
 				.sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authorizeHttpRequests(auth -> auth
 						// permit auth endpoints
-						.requestMatchers("/api/auth/**", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html")
+						.requestMatchers("/api/auth/**", "/api/auth/**", "/v3/api-docs/**", "/swagger-ui/**", // Swagger
+																												// UI
+								"/swagger-ui.html", "/swagger-resources/**", "/webjars/**")
 						.permitAll()
 						// public read endpoints could be restricted via controller method-level
 						// annotations below
