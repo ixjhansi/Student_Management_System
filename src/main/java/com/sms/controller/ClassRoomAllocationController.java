@@ -17,102 +17,128 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.server.ResponseStatusException;
+
+import org.springframework.http.HttpStatus;
 
 @RestController
 @RequestMapping("/api/class-room-allocations")
 public class ClassRoomAllocationController {
 
-	@Autowired
-	private ClassRoomAllocationRepository allocationRepository;
+    @Autowired
+    private ClassRoomAllocationRepository allocationRepository;
 
-	@Autowired
-	private ClassRepository classRepository;
+    @Autowired
+    private ClassRepository classRepository;
 
-	@Autowired
-	private RoomRepository roomRepository;
+    @Autowired
+    private RoomRepository roomRepository;
 
-	// Create
-	@PostMapping
-	@PreAuthorize("hasAnyAuthority('admin')")
-	public ClassRoomAllocationResponse createAllocation(@RequestBody ClassRoomAllocationRequest request) {
-		ClassEntity classEntity = classRepository.findById(request.getClassId())
-				.orElseThrow(() -> new RuntimeException("Class not found"));
+    // ✅ Create Allocation
+    @PostMapping
+    @PreAuthorize("hasAnyAuthority('admin')")
+    public ClassRoomAllocationResponse createAllocation(@RequestBody ClassRoomAllocationRequest request) {
+        try {
+            ClassEntity classEntity = classRepository.findById(request.getClassId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Class not found"));
 
-		Room room = roomRepository.findById(request.getRoomId())
-				.orElseThrow(() -> new RuntimeException("Room not found"));
+            Room room = roomRepository.findById(request.getRoomId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found"));
 
-		ClassRoomAllocation allocation = new ClassRoomAllocation();
-		allocation.setStatus(request.getStatus());
-		allocation.setClassEntity(classEntity);
-		allocation.setRoom(room);
+            ClassRoomAllocation allocation = new ClassRoomAllocation();
+            allocation.setStatus(request.getStatus());
+            allocation.setClassEntity(classEntity);
+            allocation.setRoom(room);
 
-		ClassRoomAllocation saved = allocationRepository.save(allocation);
-		return mapToResponse(saved);
-	}
+            ClassRoomAllocation saved = allocationRepository.save(allocation);
+            return mapToResponse(saved);
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error creating allocation", e);
+        }
+    }
 
-	// ⬇️ Changed: Pagination support added
-	@GetMapping
-	@PreAuthorize("hasAnyAuthority('sdmin')")
-	public Page<ClassRoomAllocationResponse> getAllAllocations(Pageable pageable) {
-		return allocationRepository.findAll(pageable).map(this::mapToResponse); // convert each entity → response DTO
-	}
+    // ✅ Get All Allocations (with pagination)
+    @GetMapping
+    @PreAuthorize("hasAnyAuthority('admin')")
+    public Page<ClassRoomAllocationResponse> getAllAllocations(Pageable pageable) {
+        try {
+            return allocationRepository.findAll(pageable).map(this::mapToResponse);
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error fetching allocations", e);
+        }
+    }
 
-	// Get by ID
-	@GetMapping("/{id}")
-	@PreAuthorize("hasAnyAuthority('admin')")
-	public ClassRoomAllocationResponse getAllocationById(@PathVariable Long id) {
-		ClassRoomAllocation allocation = allocationRepository.findById(id)
-				.orElseThrow(() -> new RuntimeException("Allocation not found"));
-		return mapToResponse(allocation);
-	}
+    // ✅ Get Allocation by ID
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('admin')")
+    public ClassRoomAllocationResponse getAllocationById(@PathVariable Long id) {
+        try {
+            ClassRoomAllocation allocation = allocationRepository.findById(id)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Allocation not found"));
+            return mapToResponse(allocation);
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error fetching allocation", e);
+        }
+    }
 
-	// Update
-	@PutMapping("/{id}")
-	@PreAuthorize("hasAnyAuthority('admin')")
-	public ClassRoomAllocationResponse updateAllocation(@PathVariable Long id,
-			@RequestBody ClassRoomAllocationRequest request) {
-		ClassRoomAllocation allocation = allocationRepository.findById(id)
-				.orElseThrow(() -> new RuntimeException("Allocation not found"));
+    // ✅ Update Allocation
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('admin')")
+    public ClassRoomAllocationResponse updateAllocation(@PathVariable Long id,
+                                                        @RequestBody ClassRoomAllocationRequest request) {
+        try {
+            ClassRoomAllocation allocation = allocationRepository.findById(id)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Allocation not found"));
 
-		ClassEntity classEntity = classRepository.findById(request.getClassId())
-				.orElseThrow(() -> new RuntimeException("Class not found"));
+            ClassEntity classEntity = classRepository.findById(request.getClassId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Class not found"));
 
-		Room room = roomRepository.findById(request.getRoomId())
-				.orElseThrow(() -> new RuntimeException("Room not found"));
+            Room room = roomRepository.findById(request.getRoomId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found"));
 
-		allocation.setStatus(request.getStatus());
-		allocation.setClassEntity(classEntity);
-		allocation.setRoom(room);
+            allocation.setStatus(request.getStatus());
+            allocation.setClassEntity(classEntity);
+            allocation.setRoom(room);
 
-		ClassRoomAllocation updated = allocationRepository.save(allocation);
-		return mapToResponse(updated);
-	}
+            ClassRoomAllocation updated = allocationRepository.save(allocation);
+            return mapToResponse(updated);
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error updating allocation", e);
+        }
+    }
 
-	// Delete
-	@DeleteMapping("/{id}")
-	@PreAuthorize("hasAnyAuthority('admin')")
-	public String deleteAllocation(@PathVariable Long id) {
-		allocationRepository.deleteById(id);
-		return "Class-Room allocation deleted successfully";
-	}
+    // ✅ Delete Allocation
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('admin')")
+    public String deleteAllocation(@PathVariable Long id) {
+        try {
+            if (!allocationRepository.existsById(id)) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Allocation not found");
+            }
+            allocationRepository.deleteById(id);
+            return "Class-Room allocation deleted successfully";
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error deleting allocation", e);
+        }
+    }
 
-	// Mapper
-	private ClassRoomAllocationResponse mapToResponse(ClassRoomAllocation allocation) {
-		ClassRoomAllocationResponse response = new ClassRoomAllocationResponse();
-		response.setId(allocation.getId());
-		response.setStatus(allocation.getStatus());
+    // ✅ Mapper Method
+    private ClassRoomAllocationResponse mapToResponse(ClassRoomAllocation allocation) {
+        ClassRoomAllocationResponse response = new ClassRoomAllocationResponse();
+        response.setId(allocation.getId());
+        response.setStatus(allocation.getStatus());
 
-		if (allocation.getClassEntity() != null) {
-			response.setClassId(allocation.getClassEntity().getId());
-			response.setClassName(allocation.getClassEntity().getName());
-		}
+        if (allocation.getClassEntity() != null) {
+            response.setClassId(allocation.getClassEntity().getId());
+            response.setClassName(allocation.getClassEntity().getName());
+        }
 
-		if (allocation.getRoom() != null) {
-			response.setRoomId(allocation.getRoom().getId());
-			response.setRoomCapacity(allocation.getRoom().getCapacity());
-			response.setRoomStatus(allocation.getRoom().getStatus());
-		}
+        if (allocation.getRoom() != null) {
+            response.setRoomId(allocation.getRoom().getId());
+            response.setRoomCapacity(allocation.getRoom().getCapacity());
+            response.setRoomStatus(allocation.getRoom().getStatus());
+        }
 
-		return response;
-	}
+        return response;
+    }
 }
