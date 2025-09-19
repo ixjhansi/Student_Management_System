@@ -1,8 +1,16 @@
 package com.sms.request;
 
+import jakarta.validation.constraints.NotBlank;
+
 public class LaptopRequest {
+
+    @NotBlank(message = "Serial number cannot be empty")
     private String serialNumber;
+
+    @NotBlank(message = "Model cannot be empty")
     private String model;
+
+    @NotBlank(message = "Status cannot be empty")
     private String status;
 
     // Getters and Setters
