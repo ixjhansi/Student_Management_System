@@ -7,6 +7,7 @@ import com.sms.repository.AssignmentRepository;
 import com.sms.repository.AssignmentSubmissionRepository;
 import com.sms.repository.StudentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -23,6 +24,7 @@ public class AssignmentSubmissionController {
     private StudentRepository studentRepository;
 
     @PostMapping("/update")
+    @PreAuthorize("hasAnyAuthority('admin','student','teacher')")
     public AssignmentSubmission updateSubmission(
             @RequestParam Long assignmentId,
             @RequestParam Long studentId,

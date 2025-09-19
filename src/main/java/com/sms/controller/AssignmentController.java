@@ -4,6 +4,7 @@ import com.sms.model.Assignment;
 import com.sms.request.AssignmentRequest;
 import com.sms.service.AssignmentService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -14,7 +15,7 @@ public class AssignmentController {
     private AssignmentService assignmentService;
 
     @PostMapping
-    
+    @PreAuthorize("hasAnyAuthority('admin','teacher')")
     public Assignment createAssignment(@RequestBody AssignmentRequest request) {
         return assignmentService.createAssignment(
                 request.getTitle(),
