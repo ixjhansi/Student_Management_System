@@ -1,9 +1,20 @@
 package com.sms.request;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
 public class TeacherSubjectsRequest {
+
+    @NotNull(message = "Teacher ID cannot be null")
     private Long teacherId;
+
+    @NotNull(message = "Subject ID cannot be null")
     private Long subjectId;
+
+    @NotNull(message = "Class ID cannot be null")
     private Long classId;
+
+    @NotBlank(message = "Role cannot be empty")
     private String role;
 
     // Getters and Setters

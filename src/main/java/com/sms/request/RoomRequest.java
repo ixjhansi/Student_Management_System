@@ -1,7 +1,14 @@
 package com.sms.request;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
 public class RoomRequest {
+
+    @NotNull(message = "Capacity cannot be null")
     private Integer capacity;
+
+    @NotBlank(message = "Status cannot be empty")
     private String status;
 
     // Getters and Setters

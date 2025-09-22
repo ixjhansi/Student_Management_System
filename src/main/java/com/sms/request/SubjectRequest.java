@@ -1,10 +1,16 @@
 package com.sms.request;
 
+import jakarta.validation.constraints.NotBlank;
 import java.util.List;
 
 public class SubjectRequest {
+
+    @NotBlank(message = "Name cannot be empty")
     private String name;
+
+    @NotBlank(message = "Status cannot be empty")
     private String status;
+
     // IDs for relations (handled via join tables)
     private List<Long> teacherIds;
     private List<Long> classIds;
@@ -17,25 +23,28 @@ public class SubjectRequest {
     public void setName(String name) {
         this.name = name;
     }
-    
+
     public String getStatus() {
-		return status;
-	}
-	public void setStatus(String status) {
-		this.status = status;
-	}
-	public List<Long> getTeacherIds() {
+        return status;
+    }
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public List<Long> getTeacherIds() {
         return teacherIds;
     }
     public void setTeacherIds(List<Long> teacherIds) {
         this.teacherIds = teacherIds;
     }
+
     public List<Long> getClassIds() {
         return classIds;
     }
     public void setClassIds(List<Long> classIds) {
         this.classIds = classIds;
     }
+
     public List<Long> getStudentIds() {
         return studentIds;
     }
