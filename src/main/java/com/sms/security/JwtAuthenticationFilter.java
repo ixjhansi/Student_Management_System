@@ -25,24 +25,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
 			throws ServletException, IOException {
 
-		
-		
-
 		// -----------------------------
 		// ✅ Skip Swagger & auth endpoints
 		// -----------------------------
 		// Use getServletPath() instead of getRequestURI()
-	    String path = request.getServletPath();
+		String path = request.getServletPath();
 
-	    // Skip public endpoints
-	    if (path.startsWith("/v3/api-docs") ||
-	        path.startsWith("/swagger-ui") ||
-	        path.startsWith("/swagger-resources") ||
-	        path.startsWith("/webjars") ||
-	        path.startsWith("/api/auth")) {
-	        filterChain.doFilter(request, response);
-	        return;
-	    }
+		// Skip public endpoints
+		if (path.startsWith("/v3/api-docs") || path.startsWith("/swagger-ui") || path.startsWith("/swagger-resources")
+				|| path.startsWith("/webjars") || path.startsWith("/api/auth")) {
+			filterChain.doFilter(request, response);
+			return;
+		}
 
 		// -----------------------------
 		// Normal JWT authentication logic
