@@ -81,6 +81,25 @@ public class TeacherController {
             return "Error fetching teacher: " + e.getMessage();
         }
     }
+    
+ // ---------- FILTER ----------
+    @GetMapping("/filter")
+    @PreAuthorize("hasAnyAuthority('admin')")
+    public Object filterTeachers(
+            @RequestParam(required = false) Long id,
+            @RequestParam(required = false) String name,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size) {
+        try {
+            Pageable pageable = PageRequest.of(page, size);
+            Page<Teacher> teacherPage = teacherRepository.filterTeachers(id, name, pageable);
+
+            return teacherPage.map(this::mapToResponse);
+        } catch (Exception e) {
+            return "Error filtering teachers: " + e.getMessage();
+        }
+    }
+
 
     // Update Teacher
     @PutMapping("/{id}")

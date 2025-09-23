@@ -6,15 +6,15 @@ import com.sms.model.Student;
 import com.sms.repository.AssignmentRepository;
 import com.sms.repository.AssignmentSubmissionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.thymeleaf.context.Context;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-//teacher
+
 @Service
 public class TeacherSubmissionReportScheduler {
 
@@ -25,64 +25,72 @@ public class TeacherSubmissionReportScheduler {
     private AssignmentSubmissionRepository submissionRepository;
 
     @Autowired
-    private JavaMailSender mailSender;
+    private MailService mailService;
 
-    /**
-     * Scheduler runs every minute, sends report only once per assignment
-     */
+    // DTO to send to Thymeleaf template
+    public static class StudentReportDTO {
+        private Long id;
+        private String name;
+        private String status;
+
+        public StudentReportDTO(Long id, String name, String status) {
+            this.id = id;
+            this.name = name;
+            this.status = status;
+        }
+
+        public Long getId() { return id; }
+        public String getName() { return name; }
+        public String getStatus() { return status; }
+    }
+
     @Transactional
-    @Scheduled(cron = "0 */1 * * * ?") // every 1 minute
+    @Scheduled(cron = "0 * * * * ?") // runs every minute
     public void sendSubmissionReports() {
+        LocalDateTime now = LocalDateTime.now();
         List<Assignment> assignments = assignmentRepository.findAll();
 
         for (Assignment assignment : assignments) {
-            if (assignment.getTeacher() == null || assignment.getTeacher().getEmail() == null) continue;
+
             if (assignment.isReportSent()) continue;
-            if (assignment.getDueDate() == null || assignment.getDueDate().plusMinutes(1).isAfter(java.time.LocalDateTime.now()))
-                continue;
+            if (assignment.getTeacher() == null || assignment.getTeacher().getEmail() == null) continue;
+            if (assignment.getDueDate() == null) continue;
 
-            // Fetch all students in the class
-            List<Student> students = new ArrayList<>(assignment.getClassEntity().getStudents());
+            // 1 minute after due date window
+            LocalDateTime reportTime = assignment.getDueDate().plusMinutes(2);
+            if (now.isAfter(reportTime.minusMinutes(1)) && now.isBefore(reportTime.plusMinutes(1))) {
 
-            // Fetch all submissions for this assignment
-            List<AssignmentSubmission> submissions = submissionRepository.findByAssignmentId(assignment.getId());
+                List<Student> students = new ArrayList<>(assignment.getClassEntity().getStudents());
+                List<AssignmentSubmission> submissions = submissionRepository.findByAssignmentId(assignment.getId());
 
-            StringBuilder report = new StringBuilder();
-            report.append("📘 Submission Report for Assignment: ").append(assignment.getTitle()).append("\n\n");
+                List<StudentReportDTO> studentList = new ArrayList<>();
+                for (Student student : students) {
+                    String status = submissions.stream()
+                            .filter(s -> s.getStudent().getId().equals(student.getId()))
+                            .map(AssignmentSubmission::getStatus)
+                            .findFirst()
+                            .orElse("Not Submitted");
 
-            for (Student student : students) {
-                String status = submissions.stream()
-                        .filter(s -> s.getStudent().getId().equals(student.getId()))
-                        .map(AssignmentSubmission::getStatus)
-                        .findFirst()
-                        .orElse("Not Submitted");
+                    studentList.add(new StudentReportDTO(student.getId(), student.getName(), status));
+                }
 
-                report.append("👨‍🎓 Student ID: ").append(student.getId())
-                      .append(", Name: ").append(student.getName())
-                      .append(", Status: ").append(status)
-                      .append("\n");
+                // Prepare Thymeleaf context
+                Context context = new Context();
+                context.setVariable("assignmentTitle", assignment.getTitle());
+                context.setVariable("students", studentList);
+
+                // Send HTML mail
+                mailService.sendHtmlMail(
+                        assignment.getTeacher().getEmail(),
+                        "Assignment Submission Report: " + assignment.getTitle(),
+                        "assignmentReport",
+                        context
+                );
+
+                assignment.setReportSent(true);
+                assignmentRepository.save(assignment);
+                System.out.println("✅ Report sent to teacher for assignment: " + assignment.getTitle());
             }
-
-            sendMail(assignment.getTeacher().getEmail(),
-                    "Assignment Submission Report: " + assignment.getTitle(),
-                    report.toString());
-
-            // Mark as sent
-            assignment.setReportSent(true);
-            assignmentRepository.save(assignment);
-        }
-    }
-
-    private void sendMail(String to, String subject, String text) {
-        try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setTo(to);
-            message.setSubject(subject);
-            message.setText(text);
-            mailSender.send(message);
-            System.out.println("✅ Report sent to: " + to);
-        } catch (Exception e) {
-            System.err.println("❌ Failed to send mail: " + e.getMessage());
         }
     }
 }

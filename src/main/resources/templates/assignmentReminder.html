@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Assignment Reminder</title>
+</head>
+<body>
+    <p>Hello <span th:text="${studentName}">Student</span>,</p>
+    <p>This is a reminder that your assignment is due soon.</p>
+    <ul>
+        <li><b>Title:</b> <span th:text="${assignmentTitle}">Title</span></li>
+        <li><b>Description:</b> <span th:text="${assignmentDescription}">Description</span></li>
+        <li><b>Due Date:</b> <span th:text="${dueDate}">Date</span></li>
+    </ul>
+    <p>Please complete it on time.</p>
+    <p>Regards,<br/>Student Management System</p>
+</body>
+</html>

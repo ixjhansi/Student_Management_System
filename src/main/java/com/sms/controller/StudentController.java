@@ -98,6 +98,25 @@ public class StudentController {
             return ResponseEntity.internalServerError().body("Error fetching students: " + e.getMessage());
         }
     }
+    
+ // ---------- FILTER ----------
+    @GetMapping("/filter")
+    @PreAuthorize("hasAnyAuthority('admin')")
+    public ResponseEntity<?> filterStudents(
+            @RequestParam(required = false) Long id,
+            @RequestParam(required = false) String name,
+            @PageableDefault(size = 5) Pageable pageable) {
+        try {
+            Page<StudentSummaryResponse> page =
+                    studentRepository.filterStudents(id, name, pageable)
+                            .map(this::mapToSummaryResponse);
+
+            return ResponseEntity.ok(page);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Error filtering students: " + e.getMessage());
+        }
+    }
+
 
     // ---------- PUT ----------
     @PutMapping("/{id}")

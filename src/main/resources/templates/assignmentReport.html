@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Assignment Submission Report</title>
+</head>
+<body>
+    <p>📘 Submission Report for Assignment: <span th:text="${assignmentTitle}">Title</span></p>
+    <table border="1" cellpadding="5" cellspacing="0">
+        <tr>
+            <th>Student ID</th>
+            <th>Name</th>
+            <th>Status</th>
+        </tr>
+		<tr th:each="student : ${students}">
+		    <td th:text="${student.id}">ID</td>
+		    <td th:text="${student.name}">Name</td>
+		    <td th:text="${student.status}">Status</td>
+		</tr>
+
+    </table>
+</body>
+</html>

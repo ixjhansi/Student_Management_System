@@ -9,10 +9,9 @@ import com.sms.repository.ClassRepository;
 import com.sms.repository.StudentRepository;
 import com.sms.repository.TeacherRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.thymeleaf.context.Context;
 
 @Service
 public class AssignmentService {
@@ -30,11 +29,11 @@ public class AssignmentService {
     private StudentRepository studentRepository;
 
     @Autowired
-    private JavaMailSender mailSender;
+    private MailService mailService;
 
     @Transactional
-    public Assignment createAssignment(String title, String description, 
-                                       java.time.LocalDateTime dueDate, 
+    public Assignment createAssignment(String title, String description,
+                                       java.time.LocalDateTime dueDate,
                                        Long classId, Long teacherId) {
 
         ClassEntity classEntity = classRepository.findById(classId)
@@ -52,30 +51,27 @@ public class AssignmentService {
 
         Assignment saved = assignmentRepository.save(assignment);
 
-        // Send mails to all students in the class
         for (Student student : classEntity.getStudents()) {
             if ("active".equalsIgnoreCase(student.getStatus())) {
-                sendAssignmentMail(student.getEmail(), assignment, teacher.getName(), classEntity.getName());
+                sendAssignmentMail(student.getEmail(), assignment, teacher.getName(), classEntity.getName(), student.getName());
             }
         }
 
         return saved;
     }
 
-    private void sendAssignmentMail(String to, Assignment assignment, String teacherName, String className) {
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setTo(to);
-        message.setSubject("New Assignment: " + assignment.getTitle());
-        message.setText(
-            "Hello,\n\n" +
-            "A new assignment has been posted for your class: " + className + "\n\n" +
-            "Title: " + assignment.getTitle() + "\n" +
-            "Description: " + assignment.getDescription() + "\n" +
-            "Due Date: " + assignment.getDueDate() + "\n\n" +
-            "Assigned by: " + teacherName + "\n\n" +   // <- this line
-            "Regards,\nStudent Management System"
-        );
-        mailSender.send(message);
-    }
+    private void sendAssignmentMail(String to, Assignment assignment,
+                                    String teacherName, String className, String studentName) {
 
+        Context context = new Context();
+        context.setVariable("studentName", studentName);
+        context.setVariable("assignmentTitle", assignment.getTitle());
+        context.setVariable("assignmentDescription", assignment.getDescription());
+        context.setVariable("dueDate", assignment.getDueDate());
+        context.setVariable("teacherName", teacherName);
+        context.setVariable("className", className);
+
+        mailService.sendHtmlMail(to, "New Assignment: " + assignment.getTitle(),
+                "newAssignment", context);
+    }
 }

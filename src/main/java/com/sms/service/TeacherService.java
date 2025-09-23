@@ -8,7 +8,6 @@ import org.springframework.data.domain.Pageable;
 import com.sms.model.Teacher;
 import com.sms.repository.TeacherRepository;
 
-import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -26,15 +25,15 @@ public class TeacherService {
     public Optional<Teacher> getTeacherById(Long id) {
         return teacherRepository.findById(id);
     }
-/*
-    // READ all
-    public List<Teacher> getAllTeachers() {
-        return teacherRepository.findAll();
-    }
-*/
+
     // READ all with Pagination
     public Page<Teacher> getTeachersPaginated(Pageable pageable) {
         return teacherRepository.findAll(pageable);
+    }
+
+    // 🔹 New filter method
+    public Page<Teacher> filterTeachers(Long id, String name, Pageable pageable) {
+        return teacherRepository.filterTeachers(id, name, pageable);
     }
 
     // UPDATE

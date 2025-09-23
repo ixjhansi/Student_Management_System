@@ -26,7 +26,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 			throws ServletException, IOException {
 
 		// -----------------------------
-		// ✅ Skip Swagger & auth endpoints
+		// Skip Swagger & auth endpoints
 		// -----------------------------
 		// Use getServletPath() instead of getRequestURI()
 		String path = request.getServletPath();

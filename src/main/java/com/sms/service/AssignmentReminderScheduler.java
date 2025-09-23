@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
-
 @Service
 public class AssignmentReminderScheduler {
 
@@ -20,47 +19,44 @@ public class AssignmentReminderScheduler {
     private AssignmentRepository assignmentRepository;
 
     @Autowired
-    private JavaMailSender mailSender;
+    private MailService mailService;
 
     @Transactional
-    @Scheduled(cron = "0 * * * * ?") // runs every hour
+    @Scheduled(cron = "0 * * * * ?") // runs every minute
     public void sendReminders() {
         LocalDateTime now = LocalDateTime.now();
-        LocalDateTime reminderTime = now.plusDays(1); // 1 day before due
 
         List<Assignment> assignments = assignmentRepository.findAll();
 
         for (Assignment assignment : assignments) {
-            if (assignment.getDueDate() == null || assignment.isReminderSent()) continue;
+            if (assignment.isReminderSent() || assignment.getDueDate() == null) continue;
 
-            // Send reminder if due date is ~1 day from now
-            if (assignment.getDueDate().isAfter(now) &&
-                assignment.getDueDate().isBefore(reminderTime)) {
+            // Check if current time is 1 minute before dueDate
+            LocalDateTime reminderTime = assignment.getDueDate().minusMinutes(1);//for testing
+            //LocalDateTime reminderTime = assignment.getDueDate().minusHours(24);//previous day
+
+            if (now.isAfter(reminderTime.minusSeconds(30)) && now.isBefore(reminderTime.plusSeconds(30))) {
 
                 assignment.getClassEntity().getStudents().forEach(student -> {
-                    if ("active".equalsIgnoreCase(student.getStatus())) {
-                        sendReminderMail(student.getEmail(), assignment);
+                    if ("active".equalsIgnoreCase(student.getStatus()) && student.getEmail() != null) {
+                        // Prepare Thymeleaf context
+                        org.thymeleaf.context.Context context = new org.thymeleaf.context.Context();
+                        context.setVariable("studentName", student.getName());
+                        context.setVariable("assignmentTitle", assignment.getTitle());
+                        context.setVariable("assignmentDescription", assignment.getDescription());
+                        context.setVariable("dueDate", assignment.getDueDate().toString());
+
+                        // Send HTML mail using template
+                        mailService.sendHtmlMail(student.getEmail(), 
+                                "Reminder: Assignment Due Soon - " + assignment.getTitle(),
+                                "assignmentReminder", context);
                     }
                 });
 
-                // Mark reminder as sent so it won’t send again
-                assignment.setReminderSent(true);
+                assignment.setReminderSent(true); // mark as sent
                 assignmentRepository.save(assignment);
+                System.out.println("✅ Reminder sent for assignment: " + assignment.getTitle());
             }
         }
-    }
-
-    private void sendReminderMail(String to, Assignment assignment) {
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setTo(to);
-        message.setSubject("Reminder: Assignment Due Soon - " + assignment.getTitle());
-        message.setText("Hello,\n\n" +
-                "This is a reminder that your assignment is due soon.\n\n" +
-                "Title: " + assignment.getTitle() + "\n" +
-                "Description: " + assignment.getDescription() + "\n" +
-                "Due Date: " + assignment.getDueDate() + "\n\n" +
-                "Please complete it on time.\n\n" +
-                "Regards,\nStudent Management System");
-        mailSender.send(message);
     }
 }
